@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "lib/ask/auth/version"
 
 Gem::Specification.new do |spec|
@@ -15,6 +17,9 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir["lib/**/*", "LICENSE", "README.md"]
   spec.require_paths = ["lib"]
+
+  # Bundled gems required by stdlib (needed for Ruby 3.4+)
+  spec.add_dependency "base64", "~> 0.2"
 
   spec.add_development_dependency "minitest", "~> 5.25"
   spec.add_development_dependency "mocha", "~> 3.1"

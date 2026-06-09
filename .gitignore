@@ -3,3 +3,9 @@
 Gemfile.lock
 vendor/
 tmp/
+
+# Coverage
+/coverage/
+
+# Test consumer
+/tmp/
