@@ -4,7 +4,7 @@ Gem::Specification.new do |spec|
   spec.name = "ask-auth"
   spec.version = Ask::Auth::VERSION
   spec.authors = ["Kaka Ruto"]
-  spec.email = ["kaka@anywaye.com"]
+  spec.email = ["kaka@myrrlabs.com"]
 
   spec.summary = "Credential resolution for the ask-rb ecosystem"
   spec.description = "Env, file, Rails credentials, database, and OAuth providers. Zero external dependencies."
