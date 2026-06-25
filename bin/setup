@@ -2,5 +2,11 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+echo "==> Installing dependencies..."
 bundle install
-echo "✓ ask-auth setup complete"
+
+echo "==> Installing git hooks..."
+overcommit --install 2>/dev/null || echo "  (overcommit not installed, skipping)"
+
+echo "==> Setup complete! Run 'bundle exec rake test' to verify."
