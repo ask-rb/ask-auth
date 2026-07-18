@@ -40,7 +40,7 @@ class AuthTest < Minitest::Test
     user = Object.new
     provider = stub("p")
 
-    provider.expects(:call).with("github_token", user: user).returns("token")
+    provider.expects(:call).with(:github_token, user: user).returns("token")
 
     Ask::Auth.configure do |c|
       c.providers = [provider]

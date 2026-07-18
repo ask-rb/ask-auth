@@ -5,18 +5,38 @@ module Ask
     module Providers
       # Resolves credentials from Rails encrypted credentials.
       #
-      # Convention: +resolve(:github_token)+ looks up +Rails.application.credentials.github.token+
-      # (dot-separated path from the credential name).
+      # Supports two lookup modes determined by the +name+ argument type:
+      #
+      #   Symbol/String  → flat key, looked up literally
+      #     resolve(:opencode_api_key)      → credentials.opencode_api_key
+      #     resolve("opencode_api_key")     → credentials.opencode_api_key
+      #
+      #   Array          → path segments, navigated in order
+      #     resolve([:opencode, :api_key])  → credentials.opencode.api_key
+      #     resolve([:opencode, :go, :api_key]) → credentials.opencode.go.api_key
+      #
+      # No splitting, no guessing. The caller determines the lookup path.
       #
       # Safely returns nil when Rails is not loaded.
       class RailsCredentials
         def call(name, user: nil)
           return nil unless defined?(::Rails) && ::Rails.application.respond_to?(:credentials)
 
-          parts = name.to_s.split("_")
-          value = parts.reduce(::Rails.application.credentials) do |obj, part|
-            break nil unless obj.respond_to?(part)
-            obj.public_send(part)
+          creds = ::Rails.application.credentials
+          parts = Array(name).map { |p| p.to_s.strip }
+          return nil if parts.empty? || parts.any?(&:empty?)
+
+          # Navigate the path segments. Must check the VALUE, not just
+          # respond_to?, because ActiveSupport::OrderedOptions#respond_to?
+          # returns true for any method name, even when the key doesn't exist.
+          value = parts.reduce(creds) do |obj, part|
+            begin
+              val = obj.public_send(part)
+              break nil if val.nil?
+              val
+            rescue NoMethodError
+              break nil
+            end
           end
 
           value

@@ -12,6 +12,8 @@ module Ask
       class Env
         # Returns the credential value from ENV, or nil if not found.
         def call(name, user: nil)
+          return nil unless name.is_a?(String) || name.is_a?(Symbol)
+
           conventions(name).each do |key|
             value = ENV[key.to_s]
             return value unless value.nil?

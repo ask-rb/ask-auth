@@ -18,10 +18,12 @@ module Ask
   #
   module Auth
     class MissingCredential < KeyError
-      def initialize(name)
-        super("No credential found for #{name.inspect}. " \
-              "Set #{name.to_s.upcase} in your environment, add it to ~/.ask/credentials.yml, " \
-              "or configure a provider.")
+      def initialize(names)
+        names = Array(names).flatten
+        inspected = names.map(&:inspect).join(", ")
+        super("No credential found for #{inspected}. " \
+              "Set one of #{names.map { |n| n.to_s.upcase }.uniq.join(", ")} in your environment, " \
+              "add it to ~/.ask/credentials.yml, or configure a provider.")
       end
     end
 
@@ -49,21 +51,38 @@ module Ask
       end
 
       # Walk providers in order and return the first non-nil credential.
-      # +name+:: Symbol or String identifying the credential (e.g. +:github_token+)
+      # Tries each name in order and returns the first match.
+      #
+      # Each +name+ can be:
+      #   Symbol/String  → flat key, tried literally by all providers
+      #   Array          → path segments, used for nested lookups (e.g., Rails credentials)
+      #
+      #   Ask::Auth.resolve(:openai_api_key)                    # flat key
+      #   Ask::Auth.resolve(:opencode_api_key, :opencode_go_api_key)  # fallbacks
+      #   Ask::Auth.resolve([:opencode, :api_key])              # nested path: credentials.opencode.api_key
+      #   Ask::Auth.resolve(:opencode_go_api_key, [:opencode, :api_key], user: current_user)
+      #
+      # +names+:: One or more Symbols, Strings, or Arrays identifying the credential
       # +user+:: Optional user record for per-user providers (Database, OAuth)
-      def resolve(name, user: nil)
-        name = name.to_s.strip
-        return nil if name.empty?
+      def resolve(*names, user: nil)
+        return nil if names.empty?
 
-        configuration.providers.each do |provider|
-          value = provider.call(name, user: user)
-          next if value.nil?
+        names.each do |name|
+          # Validate the name
+          parts = Array(name).map { |p| p.to_s.strip }
+          next if parts.empty? || parts.any?(&:empty?)
 
-          normalized = normalize(value)
-          return normalized unless normalized.nil?
+          configuration.providers.each do |provider|
+            # Pass the original form (Symbol/Array) so providers can interpret it
+            value = provider.call(name, user: user)
+            next if value.nil?
+
+            normalized = normalize(value)
+            return normalized unless normalized.nil?
+          end
         end
 
-        raise MissingCredential, name
+        raise MissingCredential, names
       end
 
       private

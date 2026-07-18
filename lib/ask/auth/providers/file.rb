@@ -24,6 +24,7 @@ module Ask
           data = load_file
           return nil unless data
 
+          return nil unless name.is_a?(String) || name.is_a?(Symbol)
           value = data[name.to_s] || data[name.to_sym]
           value
         end

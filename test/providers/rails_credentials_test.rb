@@ -23,7 +23,7 @@ class RailsCredentialsProviderTest < Minitest::Test
     assert_nil @provider.call(:github_token)
   end
 
-  def test_resolves_by_underscore_path
+  def test_resolves_by_path_segments
     creds = Object.new
     def creds.github
       obj = Object.new
@@ -54,7 +54,35 @@ class RailsCredentialsProviderTest < Minitest::Test
 
     Object.const_set(:Rails, rails) unless defined?(::Rails)
 
-    assert_equal "gh-secret", @provider.call(:github_token)
+    # With the new API, :github_token is a flat key lookup.
+    # For nested paths, pass path segments explicitly:
+    assert_equal "gh-secret", @provider.call([:github, :token])
+  end
+
+  def test_resolves_by_flat_key
+    creds = Object.new
+    def creds.github_token; "flat-secret"; end
+    def creds.respond_to?(method)
+      {github_token: true}.fetch(method) { super }
+    end
+
+    rails = Object.new
+    def rails.application
+      app = Object.new
+      def app.credentials
+        creds = Object.new
+        def creds.github_token; "flat-secret"; end
+        def creds.respond_to?(method)
+          {github_token: true}.fetch(method) { super }
+        end
+        creds
+      end
+      app
+    end
+
+    Object.const_set(:Rails, rails) unless defined?(::Rails)
+
+    assert_equal "flat-secret", @provider.call(:github_token)
   end
 
   def test_returns_nil_when_path_part_missing
