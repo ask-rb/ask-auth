@@ -7,6 +7,9 @@ require_relative "auth/providers/rails_credentials"
 require_relative "auth/providers/database"
 require_relative "auth/providers/oauth"
 require_relative "auth/providers/openai_codex"
+require_relative "auth/providers/device_oauth"
+require_relative "auth/providers/xai"
+require_relative "auth/providers/github_copilot"
 
 module Ask
   # Credential resolution for the ask-rb ecosystem.

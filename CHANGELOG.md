@@ -1,3 +1,11 @@
+## [0.3.1] — 2026-08-07
+
+### Added
+
+- **Device authorization grant (RFC 8628) OAuth providers.** `Ask::Auth::Providers::DeviceOAuth` base — `start_device_flow` (device + user code from the provider), `complete_device_flow` (long-poll the token endpoint; `PendingAuthorization` until the user authorizes) — plus two providers:
+  - `Ask::Auth::Providers::Xai` — xAI/Grok device OAuth (public Grok-CLI client, `auth.x.ai/oauth2`), mirroring opencode's xai.ts.
+  - `Ask::Auth::Providers::GithubCopilot` — GitHub Copilot device OAuth (`github.com/login/device/code`), mirroring opencode's copilot.ts. Note: Copilot's device flow is a gray area of GitHub's terms.
+
 ## [0.3.0] — 2026-08-07
 
 ### Added
