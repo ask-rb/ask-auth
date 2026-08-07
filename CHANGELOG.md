@@ -1,3 +1,11 @@
+## [0.3.0] — 2026-08-07
+
+### Added
+
+- **OpenAI Codex OAuth provider — bring your ChatGPT subscription.** `Ask::Auth::Providers::OpenaiCodex` completes the PKCE flow against `auth.openai.com` (public Codex client id, `openid profile email offline_access` scope): `authorize_url` (with `id_token_add_organizations`), `authorize!` (code exchange → `{token, refresh_token, expires_at, account_id, raw}`), and `refresh(refresh_token:)`. Includes `.allowed_model?` tier filtering (gpt-5.4+ general + codex family; pro-reasoning and gpt-5.6 excluded) and account-id extraction from the id_token — mirroring opencode's codex.ts.
+- **Completed OAuth base provider.** `Ask::Auth::Providers::OAuth` now implements the token exchange (`authorize!`) and refresh grants via an injectable stdlib HTTP layer, with optional verifier/state persistence through a `store`/`fetch`-responding storage object. `Ask::Auth::OAuthError` raised on transport/provider failures.
+- `Ask::Auth::OAuth::HTTP` — dependency-free form-encoded POST for token endpoints (swappable in tests).
+
 ## [0.2.3] — 2026-07-18
 
 ### Fixed

@@ -6,6 +6,7 @@ require_relative "auth/providers/file"
 require_relative "auth/providers/rails_credentials"
 require_relative "auth/providers/database"
 require_relative "auth/providers/oauth"
+require_relative "auth/providers/openai_codex"
 
 module Ask
   # Credential resolution for the ask-rb ecosystem.
@@ -24,6 +25,12 @@ module Ask
         super("No credential found for #{inspected}. " \
               "Set one of #{names.map { |n| n.to_s.upcase }.uniq.join(", ")} in your environment, " \
               "add it to ~/.ask/credentials.yml, or configure a provider.")
+      end
+    end
+
+    class OAuthError < StandardError
+      def initialize(message)
+        super("OAuth flow failed: #{message}")
       end
     end
 
