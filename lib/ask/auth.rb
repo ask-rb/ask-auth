@@ -74,7 +74,21 @@ module Ask
       #
       # +names+:: One or more Symbols, Strings, or Arrays identifying the credential
       # +user+:: Optional user record for per-user providers (Database, OAuth)
+      #
+      # Raises MissingCredential when nothing matches. Use +lookup+ for a
+      # non-raising variant.
       def resolve(*names, user: nil)
+        value = lookup(*names, user: user)
+        return value unless value.nil?
+
+        raise MissingCredential, names
+      end
+
+      # Non-raising variant of +resolve+: returns nil when no provider
+      # matches, instead of raising MissingCredential. For config-time
+      # resolution (e.g. ERB in database.yml) where a missing credential
+      # should degrade to nil/defaults rather than crash the boot.
+      def lookup(*names, user: nil)
         return nil if names.empty?
 
         names.each do |name|
@@ -92,7 +106,7 @@ module Ask
           end
         end
 
-        raise MissingCredential, names
+        nil
       end
 
       private

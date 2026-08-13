@@ -1,3 +1,14 @@
+## [0.3.2] — 2026-08-13
+
+### Added
+
+- **`Ask::Auth.lookup` — non-raising credential resolution.** Same chain and
+  fallback semantics as `resolve`, but returns `nil` when nothing matches
+  instead of raising `MissingCredential`. For config-time resolution (e.g.
+  ERB in `database.yml`) where a missing credential should degrade to
+  nil/defaults rather than crash the boot. `resolve` is now implemented on
+  top of `lookup` and keeps its raising behavior.
+
 ## [0.3.1] — 2026-08-07
 
 ### Added

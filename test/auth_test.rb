@@ -36,6 +36,42 @@ class AuthTest < Minitest::Test
     assert_raises(Ask::Auth::MissingCredential) { Ask::Auth.resolve(:unknown) }
   end
 
+  # ── lookup (non-raising) ──
+
+  def test_lookup_returns_first_non_nil_from_providers
+    provider_a = stub("a", call: nil)
+    provider_b = stub("b", call: "secret")
+
+    Ask::Auth.configure do |c|
+      c.providers = [provider_a, provider_b]
+    end
+
+    assert_equal "secret", Ask::Auth.lookup(:test_key)
+  end
+
+  def test_lookup_returns_nil_when_nothing_matches
+    provider = stub("p", call: nil)
+
+    Ask::Auth.configure do |c|
+      c.providers = [provider]
+    end
+
+    assert_nil Ask::Auth.lookup(:unknown)
+  end
+
+  def test_lookup_with_empty_names_returns_nil
+    assert_nil Ask::Auth.lookup
+  end
+
+  def test_resolve_uses_lookup_and_raises_when_lookup_returns_nil
+    Ask::Auth.configure do |c|
+      c.providers = [stub("p", call: nil)]
+    end
+
+    assert_nil Ask::Auth.lookup(:unknown)
+    assert_raises(Ask::Auth::MissingCredential) { Ask::Auth.resolve(:unknown) }
+  end
+
   def test_resolve_passes_name_and_user_to_providers
     user = Object.new
     provider = stub("p")
