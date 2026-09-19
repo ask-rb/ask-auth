@@ -1,3 +1,27 @@
+## [0.3.4] — 2026-08-18
+
+### Fixed
+
+- **Token exchange requests JSON by default.** Added `Accept: application/json`
+  header to `token_exchange` so providers that default to form-encoded
+  responses (e.g. GitHub) return parseable JSON.
+
+## [0.3.3] — 2026-08-18
+
+### Fixed
+
+- **`OAuth#fetch_oauth_state` tolerates string keys.** Cookie session stores
+  serialize to JSON, converting symbol keys to strings. The verifier lookup
+  now falls back to `value[key.to_s]` when the symbol lookup returns nil.
+
+### Added
+
+- **`OAuth` accepts `client_secret:` for token exchange.** Providers that
+  require a client secret (e.g. GitHub OAuth) can now pass it at
+  construction. The secret is included in `token_exchange` and `refresh`
+  requests when present, and omitted when nil — preserving backwards
+  compatibility with PKCE-only flows.
+
 ## [0.3.2] — 2026-08-13
 
 ### Added

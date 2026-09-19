@@ -46,8 +46,8 @@ class OAuthProviderTest < Minitest::Test
       "https://issuer.example/token",
       {grant_type: "authorization_code", code: "auth-code",
        redirect_uri: "https://app.example/callback", client_id: "my-client",
-       code_verifier: "verifier"}
-    ).returns([200, %({"access_token":"acc","refresh_token":"ref","expires_in":3600})])
+       code_verifier: "verifier"},
+      headers: {"Accept" => "application/json"}).returns([200, %({"access_token":"acc","refresh_token":"ref","expires_in":3600})])
 
     provider = Ask::Auth::Providers::OAuth.new(
       client_id: "my-client",
@@ -78,8 +78,8 @@ class OAuthProviderTest < Minitest::Test
     http = stub("http")
     http.stubs(:post_form).with(
       "https://issuer.example/token",
-      {grant_type: "refresh_token", refresh_token: "ref", client_id: "my-client"}
-    ).returns([200, %({"access_token":"acc2","refresh_token":"ref2","expires_in":3600})])
+      {grant_type: "refresh_token", refresh_token: "ref", client_id: "my-client"},
+      headers: {"Accept" => "application/json"}).returns([200, %({"access_token":"acc2","refresh_token":"ref2","expires_in":3600})])
 
     provider = Ask::Auth::Providers::OAuth.new(
       client_id: "my-client",
@@ -145,5 +145,87 @@ class OAuthProviderTest < Minitest::Test
     url = provider.authorize_url(user: stub("user", id: 1))
     assert_includes url, "client_id=my-client"
     assert url.start_with?("https://github.com/login/oauth/authorize")
+  end
+
+  def test_authorize_recovers_verifier_from_string_key_storage
+    user = stub("user", id: 1)
+    storage = stub("storage")
+    # Simulates JSON-serialized cookie session: symbol keys become strings.
+    storage.stubs(:fetch).with(:oauth_state, user: user).returns({"verifier" => "string-key-verifier", "state" => "st"})
+
+    http = stub("http")
+    http.stubs(:post_form).returns([200, %({"access_token":"acc","expires_in":3600})])
+
+    provider = Ask::Auth::Providers::OAuth.new(
+      client_id: "my-client",
+      token_url: "https://issuer.example/token",
+      storage: storage,
+      http: http
+    )
+
+    tokens = provider.authorize!(user: user, code: "auth-code")
+
+    assert_equal "acc", tokens[:token]
+  end
+
+  def test_authorize_includes_client_secret_when_provided
+    http = stub("http")
+    http.stubs(:post_form).with(
+      "https://issuer.example/token",
+      {grant_type: "authorization_code", code: "auth-code",
+       redirect_uri: "urn:ietf:wg:oauth:2.0:oob", client_id: "my-client",
+       code_verifier: "verifier", client_secret: "my-secret"},
+      headers: {"Accept" => "application/json"}).returns([200, %({"access_token":"acc","expires_in":3600})])
+
+    provider = Ask::Auth::Providers::OAuth.new(
+      client_id: "my-client",
+      client_secret: "my-secret",
+      token_url: "https://issuer.example/token",
+      http: http
+    )
+
+    tokens = provider.authorize!(user: stub("user", id: 1), code: "auth-code", code_verifier: "verifier")
+
+    assert_equal "acc", tokens[:token]
+  end
+
+  def test_authorize_omits_client_secret_when_nil
+    http = stub("http")
+    http.stubs(:post_form).with(
+      "https://issuer.example/token",
+      {grant_type: "authorization_code", code: "auth-code",
+       redirect_uri: "urn:ietf:wg:oauth:2.0:oob", client_id: "my-client",
+       code_verifier: "verifier"},
+      headers: {"Accept" => "application/json"}).returns([200, %({"access_token":"acc","expires_in":3600})])
+
+    provider = Ask::Auth::Providers::OAuth.new(
+      client_id: "my-client",
+      token_url: "https://issuer.example/token",
+      http: http
+    )
+
+    tokens = provider.authorize!(user: stub("user", id: 1), code: "auth-code", code_verifier: "verifier")
+
+    assert_equal "acc", tokens[:token]
+  end
+
+  def test_refresh_includes_client_secret_when_provided
+    http = stub("http")
+    http.stubs(:post_form).with(
+      "https://issuer.example/token",
+      {grant_type: "refresh_token", refresh_token: "ref",
+       client_id: "my-client", client_secret: "my-secret"},
+      headers: {"Accept" => "application/json"}).returns([200, %({"access_token":"acc2","expires_in":3600})])
+
+    provider = Ask::Auth::Providers::OAuth.new(
+      client_id: "my-client",
+      client_secret: "my-secret",
+      token_url: "https://issuer.example/token",
+      http: http
+    )
+
+    tokens = provider.refresh(refresh_token: "ref")
+
+    assert_equal "acc2", tokens[:token]
   end
 end

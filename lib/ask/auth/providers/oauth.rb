@@ -29,12 +29,14 @@ module Ask
       # Subclasses override #parse_token_response to add provider-specific
       # fields (e.g. an account id from the id_token).
       class OAuth
-        attr_reader :client_id, :redirect_uri
+        attr_reader :client_id, :client_secret, :redirect_uri
 
-        def initialize(storage: nil, client_id: nil, authorize_url: nil, token_url: nil,
+        def initialize(storage: nil, client_id: nil, client_secret: nil,
+          authorize_url: nil, token_url: nil,
           redirect_uri: nil, scope: nil, http: Ask::Auth::OAuth::HTTP)
           @storage = storage
           @client_id = client_id
+          @client_secret = client_secret
           @authorize_url = authorize_url
           @token_url = token_url
           @redirect_uri = redirect_uri
@@ -121,7 +123,8 @@ module Ask
         def token_exchange(**params)
           raise OAuthError, "token_url not configured" if @token_url.to_s.empty?
 
-          status, body = @http.post_form(@token_url, params)
+          params[:client_secret] = client_secret if client_secret
+          status, body = @http.post_form(@token_url, params, headers: { "Accept" => "application/json" })
           raise OAuthError, "token exchange failed (#{status}): #{body.to_s[0, 200]}" unless status == 200
 
           body
@@ -153,7 +156,12 @@ module Ask
           return nil unless @storage.respond_to?(:fetch) && user
 
           value = @storage.fetch(:oauth_state, user: user)
-          value.is_a?(Hash) ? value[key] : nil
+          return nil unless value.is_a?(Hash)
+
+          # Symbol keys survive Ruby→JSON→Ruby round-trips, but cookie
+          # session stores serialize to JSON (converting symbols to strings).
+          # Support both by falling back to the string representation.
+          value[key] || value[key.to_s]
         end
       end
     end
